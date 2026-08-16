@@ -18,7 +18,7 @@ router.get("/", getProducts);
 router.get("/:id", getProductById);
 
 // Admin Protected Routes
-router.post("/createProduct/", authenticateToken, requireAdmin, createProduct);
+router.post("/createProduct", authenticateToken, requireAdmin, createProduct);
 router.put("/updateProduct/:id", authenticateToken, requireAdmin, updateProduct);
 router.delete("/deleteProduct/:id", authenticateToken, requireAdmin, deleteProduct);
 

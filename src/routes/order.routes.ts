@@ -11,8 +11,8 @@ const router = Router();
 // Sub routes protected using authenticateToken middleware
 router.use(authenticateToken);
 
-router.post("/", createOrder);
-router.get("/", getMyOrders);
-router.get("/:id", getOrderById);
+router.post("/createOrder", createOrder);
+router.get("/getMyOrders", getMyOrders);
+router.get("/getOrderById/:id", getOrderById);
 
 export default router;
