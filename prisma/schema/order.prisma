@@ -7,7 +7,7 @@ enum OrderStatus {
 model Order {
   id        Int         @id @default(autoincrement())
   userId    Int
-  total     Float       
+  total     Float
   status    OrderStatus @default(PENDING)
   items     OrderItem[]
   createdAt DateTime    @default(now())
