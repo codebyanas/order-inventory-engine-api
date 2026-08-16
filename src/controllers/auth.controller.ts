@@ -3,9 +3,10 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/db.js";
 
+// 1. PUBLIC REGISTRATION (Users Only)
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
       res.status(400).json({
@@ -34,7 +35,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         name,
         email,
         password: hashedPassword,
-        role: role === "ADMIN" ? "ADMIN" : "USER",
       },
       select: {
         id: true,
@@ -59,6 +59,77 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// 2. SECURE SINGLE ADMIN REGISTRATION
+export const registerAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { name, email, password, adminSecret } = req.body;
+
+    const envAdminSecret = process.env.ADMIN_SECRET_KEY;
+    if (!envAdminSecret || adminSecret !== envAdminSecret) {
+      res.status(403).json({
+        success: false,
+        message: "Forbidden: Invalid admin registration secret.",
+      });
+      return;
+    }
+
+    const existingAdmin = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+    });
+
+    if (existingAdmin) {
+      res.status(400).json({
+        success: false,
+        message:
+          "System limit reached: An Admin already exists. Only one Admin is allowed.",
+      });
+      return;
+    }
+
+    if (!name || !email || !password) {
+      res.status(400).json({
+        success: false,
+        message: "Name, email, and password are required.",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const admin = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: "ADMIN",
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Admin account created successfully.",
+      data: admin,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to create admin.",
+      error: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
+// 3. LOGIN CONTROLLER
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -72,7 +143,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const jwtSecret = process.env.JWT_SECRET;
-
     if (!jwtSecret) {
       throw new Error(
         "[Auth Error]: JWT_SECRET is missing in environment variables."
@@ -126,92 +196,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       message: "Failed to login.",
-      error: error instanceof Error ? error.message : error,
-    });
-  }
-};
-
-export const registerAdmin = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { name, email, password, adminSecret } = req.body;
-
-    // 1. Secret Key Check from Environment Variables
-    const envAdminSecret = process.env.ADMIN_SECRET_KEY;
-    if (!envAdminSecret || adminSecret !== envAdminSecret) {
-      res.status(403).json({
-        success: false,
-        message: "Forbidden: Invalid admin registration secret.",
-      });
-      return;
-    }
-
-    // 2. Enforce Single Admin Constraint in Database
-    const existingAdmin = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-    });
-
-    if (existingAdmin) {
-      res.status(400).json({
-        success: false,
-        message:
-          "System limit reached: An Admin already exists. Only one Admin is allowed.",
-      });
-      return;
-    }
-
-    // 3. Input Validation
-    if (!name || !email || !password) {
-      res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required.",
-      });
-      return;
-    }
-
-    // 4. Duplicate Email Check
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      res.status(409).json({
-        success: false,
-        message: "Email is already registered.",
-      });
-      return;
-    }
-
-    // 5. Password Hashing & Admin Creation
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const admin = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role: "ADMIN",
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Admin account created successfully.",
-      data: admin,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to create admin.",
       error: error instanceof Error ? error.message : error,
     });
   }
