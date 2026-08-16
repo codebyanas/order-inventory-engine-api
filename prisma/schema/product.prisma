@@ -1,0 +1,11 @@
+model Product {
+  id        Int         @id @default(autoincrement())
+  title     String
+  price     Float
+  stock     Int
+  createdAt DateTime    @default(now())
+
+  orderItems OrderItem[]
+
+  @@index([title])
+}
