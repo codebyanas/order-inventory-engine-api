@@ -4,6 +4,7 @@ import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import productRoutes from "./routes/product.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get("/", (req: Request, res: Response) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
 
 connectDB().then(() => {
   app.listen(PORT, () => {
