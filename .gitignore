@@ -1,3 +1,12 @@
+# Database Dumps & Scripts (Local Files Only)
+/backup.sql
+/data.sql
+/fix.sql
+/*.sql
+
+# Keep Prisma Migrations safe (Exception for *.sql in prisma folder)
+!prisma/schema/migrations/**/*.sql
+
 # Dependencies
 node_modules/
 

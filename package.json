@@ -9,7 +9,11 @@
     "start": "node dist/server.js",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:backup:dump": "\"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe\" -u root -p --no-create-info order-inventory-engine-api > backup.sql",
+    "db:backup:push": "prisma db execute --file ./backup.sql",
+    "db:fix-mode": "prisma db execute --file ./fix.sql"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.9.1",
