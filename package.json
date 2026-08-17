@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate --schema=prisma/schema",
+    "build:local": "prisma generate --schema=prisma/schema && tsc",
     "postinstall": "prisma generate --schema=prisma/schema",
     "start": "node dist/server.js",
     "studio": "prisma studio",
