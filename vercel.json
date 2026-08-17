@@ -1,4 +1,11 @@
 {
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/products",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
