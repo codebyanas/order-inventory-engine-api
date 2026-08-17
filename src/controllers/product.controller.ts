@@ -47,7 +47,7 @@ export const getProducts = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Products fetch karne mein error aaya.",
+      message: "Error in products fetch",
       error: error instanceof Error ? error.message : error,
     });
   }

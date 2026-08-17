@@ -15,7 +15,7 @@ const getDbConfig = () => {
     const dbUrl = new URL(dbUrlString);
 
     const host = dbUrl.hostname;
-    const database = dbUrl.pathname.substring(1); // Remove leading slash
+    const database = dbUrl.pathname.substring(1);
 
     if (!host) {
       throw new Error(
@@ -28,58 +28,53 @@ const getDbConfig = () => {
       );
     }
 
+    const isLocalhost = host === "localhost" || host === "127.0.0.1";
+
     return {
       host,
       port: Number(dbUrl.port) || 3306,
       user: dbUrl.username,
       password: dbUrl.password,
       database,
+      // Localhost par SSL false, TiDB Cloud par true
+      ssl: isLocalhost ? false : true,
+      connectionLimit: 5,
     };
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error(
-        "[Database Config Error]: Invalid DATABASE_URL format. Expected format: mysql://user:password@localhost:3306/dbname"
+        "[Database Config Error]: Invalid DATABASE_URL format."
       );
     }
     throw error;
   }
 };
 
-const config = getDbConfig();
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-const adapter = new PrismaMariaDb({
-  host: config.host,
-  port: config.port,
-  user: config.user,
-  password: config.password,
-  database: config.database,
-});
+const createPrismaClient = () => {
+  const config = getDbConfig();
+  const adapter = new PrismaMariaDb({
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database,
+    ssl: config.ssl,
+    connectionLimit: config.connectionLimit,
+  });
+  return new PrismaClient({ adapter });
+};
 
-export const prisma = new PrismaClient({ adapter });
+export const prisma = globalForPrisma.prisma || createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const connectDB = async (): Promise<void> => {
   try {
     await prisma.$connect();
     console.log("MySQL Database connected successfully via Prisma.");
   } catch (error: any) {
-    console.error("[Database Connection Failed]");
-
-    if (error?.code === "ECONNREFUSED") {
-      console.error(
-        "Reason: Connection refused. Verify that MySQL server is running and accessible on the specified port."
-      );
-    } else if (error?.code === "ER_ACCESS_DENIED_ERROR") {
-      console.error(
-        "Reason: Access denied. Invalid MySQL database username or password."
-      );
-    } else if (error?.code === "ER_BAD_DB_ERROR") {
-      console.error(
-        `Reason: Database '${config.database}' does not exist on the MySQL server.`
-      );
-    } else {
-      console.error("Error Details:", error?.message || error);
-    }
-
-    process.exit(1);
+    console.error("[Database Connection Failed]", error?.message || error);
   }
 };
