@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "prisma generate && tsc",
-    "postinstall": "prisma generate",
+    "build": "prisma generate --schema=prisma/schema && tsc",
+    "postinstall": "prisma generate --schema=prisma/schema",
     "start": "node dist/server.js",
     "studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
