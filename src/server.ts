@@ -16,7 +16,13 @@ app.use(express.json());
 const isProduction = process.env.NODE_ENV === "production";
 app.use(morgan(isProduction ? "combined" : "dev"));
 
-//Health Check Route
+// Database Connection Middleware
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
+// Health Check Route
 app.get("/", (req: Request, res: Response) => {
   res.json({
     success: true,
@@ -30,14 +36,12 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 
-// Database Connection & Local Server
-connectDB().then(() => {
-  if (process.env.NODE_ENV !== "production") {
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
-});
+// Local Server ONLY
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 // Export app for Vercel Serverless Function
 export default app;
