@@ -1,6 +1,7 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { prisma } from "../config/db.js";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
+import { OrderStatus } from "@prisma/client";
 
 interface OrderItemInput {
   productId: number;
@@ -229,6 +230,64 @@ export const getOrderById = async (
       success: false,
       message: "Failed to fetch order details.",
       error: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
+// Update Order Status (Admin Functionality)
+// PATCH /api/orders/:id/status
+
+export const updateOrderStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const orderId = Number(id);
+
+    if (isNaN(orderId)) {
+      res.status(400).json({ success: false, message: "Invalid Order ID" });
+      return;
+    }
+
+    const formattedStatus = status?.toUpperCase() as keyof typeof OrderStatus;
+
+    // 2. Validate against actual Prisma Enum keys
+    if (!status || !(formattedStatus in OrderStatus)) {
+      res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${Object.keys(OrderStatus).join(", ")}`,
+      });
+      return;
+    }
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!existingOrder) {
+      res.status(404).json({ success: false, message: "Order not found." });
+      return;
+    }
+
+    // 3. Pass Prisma Enum value
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus[formattedStatus],
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Order status updated to '${formattedStatus}' successfully.`,
+      data: updatedOrder,
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    console.error("[Update Order Status Error]:", errorMessage);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order status.",
+      error: errorMessage,
     });
   }
 };
